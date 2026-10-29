@@ -8,8 +8,10 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,12 +29,6 @@ import (
 
 // arrKey matches compose.yaml.
 const arrKey = "integration-test-key"
-
-// listID is a private static list on the mdblist account the integration API key
-// belongs to, which exists only for these tests. It holds four movies (Star Wars, Rogue
-// One, The Clone Wars film, The Rise of Skywalker) and four Shows (The Mandalorian, Andor,
-// Star Wars Rebels, The Clone Wars series). Change it and the expected counts below with it.
-const listID = 234715
 
 // "Star Wars: The Clone Wars" is on the list twice: as a 2008 film and as a 2008 series.
 // Blocking the series in Sonarr must not stop the film reaching Radarr.
@@ -64,13 +60,15 @@ func TestIntegration_SyncTwice(t *testing.T) {
 
 	lists := mdblist.New(&http.Client{Timeout: 30 * time.Second}, mdblist.DefaultBaseURL, mdbKey, "mdblistaar/test")
 
+	listID := fixtureListID(t, mdbKey)
+
 	items, err := lists.ListItems(t.Context(), listID)
 	must(t, err)
 
 	prepare(t, r, s, items)
 
 	bin := build(t)
-	cfgPath := writeConfig(t, radarrURL, sonarrURL)
+	cfgPath := writeConfig(t, radarrURL, sonarrURL, listID)
 
 	for i, want := range [][]synced{
 		{{List: "fixture", Arr: "radarr", Added: 3, Excluded: 1}, {List: "fixture", Arr: "sonarr", Added: 3, Excluded: 1}},
@@ -157,7 +155,7 @@ func build(t *testing.T) string {
 	return bin
 }
 
-func writeConfig(t *testing.T, radarrURL, sonarrURL string) string {
+func writeConfig(t *testing.T, radarrURL, sonarrURL string, listID int64) string {
 	t.Helper()
 
 	cfg := fmt.Sprintf(`radarr:
@@ -209,6 +207,48 @@ func waitReady(t *testing.T, name string, status func(context.Context) error) {
 	}
 }
 
+// fixtureListID returns the id of the only list on the mdblist account the integration
+// API key belongs to. That account exists only for these tests, and its one list is a
+// private static list holding four movies (Star Wars, Rogue One, The Clone Wars film, The
+// Rise of Skywalker) and four Shows (The Mandalorian, Andor, Star Wars Rebels, The Clone
+// Wars series). Change the list and the expected counts in TestIntegration_SyncTwice with it.
+func fixtureListID(t *testing.T, key string) int64 {
+	t.Helper()
+
+	endpoint := mdblist.DefaultBaseURL + "/lists/user?" + url.Values{"apikey": {key}}.Encode()
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, endpoint, nil)
+	must(t, err)
+
+	req.Header.Set("User-Agent", "mdblistaar/test")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// The URL carries the API key, so report only the underlying error.
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
+			err = urlErr.Err
+		}
+
+		t.Fatalf("list the test account's lists: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list the test account's lists: HTTP %d", resp.StatusCode)
+	}
+
+	var lists []struct {
+		ID int64 `json:"id"`
+	}
+	must(t, json.NewDecoder(resp.Body).Decode(&lists))
+
+	if len(lists) != 1 {
+		t.Fatalf("the test account must hold exactly one list, the fixture; it has %d", len(lists))
+	}
+
+	return lists[0].ID
+}
+
 // prepare checks the Arrs start empty, then adds the root folders and puts one movie and
 // one Show from the fixture list on the Arrs' exclusion lists, which is where "prevent
 // re-adding from import lists" goes when you delete a title.
@@ -237,7 +277,7 @@ func prepare(t *testing.T, r *radarr.Radarr, s *sonarr.Sonarr, items mdblist.Ite
 		{items.Shows, func(i mdblist.Item) int64 { return i.TVDBID }, blockedShowTVDB},
 	} {
 		if !slices.ContainsFunc(want.items, func(i mdblist.Item) bool { return want.id(i) == want.value }) {
-			t.Fatalf("fixture list %d is missing title %d", listID, want.value)
+			t.Fatalf("the fixture list is missing title %d", want.value)
 		}
 	}
 
