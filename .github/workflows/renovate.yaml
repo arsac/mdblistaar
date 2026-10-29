@@ -1,0 +1,62 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Renovate
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Renovate log level"
+        type: choice
+        options: [debug, info, warn, error]
+        default: info
+      dryRun:
+        description: "Dry-run mode (no PRs/commits)"
+        type: choice
+        options: ["disabled", "extract", "lookup", "full"]
+        default: disabled
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+# The job acts only through the App token below, never GITHUB_TOKEN.
+permissions: {}
+
+jobs:
+  renovate:
+    name: Self-hosted Renovate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # GITHUB_TOKEN can't do this job: PRs it opens don't trigger workflows,
+      # so the CI that gates an automerge never runs. The App token makes
+      # Renovate's PRs behave like any contributor's.
+      - name: Mint bot-jackson token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.BOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
+          # Renovate's documented needs. Leaving one out fails silently (no Dashboard
+          # updates, no action pin bumps); one the App lacks fails this step loudly instead.
+          permission-contents: write # branches and commits
+          permission-pull-requests: write # open and automerge PRs
+          permission-issues: write # the Dependency Dashboard issue
+          permission-workflows: write # bump action pins in .github/workflows
+          permission-statuses: write # the renovate/stability-days release-age status
+          permission-checks: read # read CI results before automerging
+
+      # autodiscover stays off: the App is installed on more than this repo.
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+        env:
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+          RENOVATE_DRY_RUN: >-
+            ${{ inputs.dryRun == 'disabled' && 'null' || inputs.dryRun }}
+          RENOVATE_PLATFORM: github
+          RENOVATE_AUTODISCOVER: "false"
+          RENOVATE_REPOSITORIES: ${{ github.repository }}

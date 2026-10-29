@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    lint:
+      glob: "*.go"
+      run: mise exec -- golangci-lint run --fix
+      stage_fixed: true
