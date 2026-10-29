@@ -20,17 +20,17 @@ sourceLists:
 const animeList = `  - name: anime
     id: 12345
     radarr:
-      rootFolder: /movies/anime
+      rootFolderPath: /movies/anime
       qualityProfile: Remux-1080p - Anime
       tags: [mdblist]
       monitor: movieOnly
-      searchOnAdd: true
+      searchForMovie: true
       minimumAvailability: released
     sonarr:
-      rootFolder: /tv/anime
+      rootFolderPath: /tv/anime
       qualityProfile: Remux-1080p - Anime
       monitor: all
-      searchOnAdd: false
+      searchForMissingEpisodes: false
       seriesType: anime
       seasonFolder: true
 `
@@ -81,7 +81,7 @@ func TestLoad_Valid(t *testing.T) {
 	}
 
 	l := cfg.SourceLists[0]
-	if l.ID != 12345 || l.Sonarr.SeriesType != "anime" || !*l.Sonarr.SeasonFolder || !*l.Radarr.SearchOnAdd {
+	if l.ID != 12345 || l.Sonarr.SeriesType != "anime" || !*l.Sonarr.SeasonFolder || !*l.Radarr.SearchForMovie {
 		t.Errorf("SourceList = %+v", l)
 	}
 }
@@ -113,8 +113,8 @@ func TestLoad_Invalid(t *testing.T) {
 		},
 		{
 			name:     "unknown field",
-			config:   strings.Replace(validConfig, "rootFolder:", "rootFolders:", 1),
-			wantErrs: []string{"field rootFolders not found"},
+			config:   strings.Replace(validConfig, "rootFolderPath:", "rootFolderPaths:", 1),
+			wantErrs: []string{"field rootFolderPaths not found"},
 		},
 		{
 			name:     "bad url",

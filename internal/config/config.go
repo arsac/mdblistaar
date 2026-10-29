@@ -41,23 +41,23 @@ type SourceList struct {
 
 // RadarrOptions are the Add Options for a Source List's movies.
 type RadarrOptions struct {
-	RootFolder          string   `yaml:"rootFolder"`
+	RootFolderPath      string   `yaml:"rootFolderPath"`
 	QualityProfile      string   `yaml:"qualityProfile"`
 	Tags                []string `yaml:"tags"`
 	Monitor             string   `yaml:"monitor"`
-	SearchOnAdd         *bool    `yaml:"searchOnAdd"`
+	SearchForMovie      *bool    `yaml:"searchForMovie"`
 	MinimumAvailability string   `yaml:"minimumAvailability"`
 }
 
 // SonarrOptions are the Add Options for a Source List's Shows.
 type SonarrOptions struct {
-	RootFolder     string   `yaml:"rootFolder"`
-	QualityProfile string   `yaml:"qualityProfile"`
-	Tags           []string `yaml:"tags"`
-	Monitor        string   `yaml:"monitor"`
-	SearchOnAdd    *bool    `yaml:"searchOnAdd"`
-	SeriesType     string   `yaml:"seriesType"`
-	SeasonFolder   *bool    `yaml:"seasonFolder"`
+	RootFolderPath           string   `yaml:"rootFolderPath"`
+	QualityProfile           string   `yaml:"qualityProfile"`
+	Tags                     []string `yaml:"tags"`
+	Monitor                  string   `yaml:"monitor"`
+	SearchForMissingEpisodes *bool    `yaml:"searchForMissingEpisodes"`
+	SeriesType               string   `yaml:"seriesType"`
+	SeasonFolder             *bool    `yaml:"seasonFolder"`
 }
 
 //nolint:gochecknoglobals // read-only lookup tables of the values each Arr accepts.
@@ -168,21 +168,21 @@ func validateArr(name, keyEnv string, a Arr) []error {
 
 func (o RadarrOptions) validate(at string) []error {
 	return slices.Concat(
-		required(at, "rootFolder", o.RootFolder),
+		required(at, "rootFolderPath", o.RootFolderPath),
 		required(at, "qualityProfile", o.QualityProfile),
 		oneOf(at, "monitor", o.Monitor, radarrMonitors),
 		oneOf(at, "minimumAvailability", o.MinimumAvailability, radarrAvailabilities),
-		requiredBool(at, "searchOnAdd", o.SearchOnAdd),
+		requiredBool(at, "searchForMovie", o.SearchForMovie),
 	)
 }
 
 func (o SonarrOptions) validate(at string) []error {
 	return slices.Concat(
-		required(at, "rootFolder", o.RootFolder),
+		required(at, "rootFolderPath", o.RootFolderPath),
 		required(at, "qualityProfile", o.QualityProfile),
 		oneOf(at, "monitor", o.Monitor, sonarrMonitors),
 		oneOf(at, "seriesType", o.SeriesType, sonarrSeriesTypes),
-		requiredBool(at, "searchOnAdd", o.SearchOnAdd),
+		requiredBool(at, "searchForMissingEpisodes", o.SearchForMissingEpisodes),
 		requiredBool(at, "seasonFolder", o.SeasonFolder),
 	)
 }

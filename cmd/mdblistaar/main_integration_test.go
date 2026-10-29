@@ -168,18 +168,18 @@ sourceLists:
   - name: fixture
     id: %d
     radarr:
-      rootFolder: /movies
+      rootFolderPath: /movies
       qualityProfile: Any
       tags: [mdblistaar-it]
       monitor: movieOnly
-      searchOnAdd: false
+      searchForMovie: false
       minimumAvailability: released
     sonarr:
-      rootFolder: /tv
+      rootFolderPath: /tv
       qualityProfile: Any
       tags: [mdblistaar-it]
       monitor: future
-      searchOnAdd: false
+      searchForMissingEpisodes: false
       seriesType: standard
       seasonFolder: true
 `, radarrURL, sonarrURL, listID)

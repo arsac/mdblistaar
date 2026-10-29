@@ -29,18 +29,18 @@ sourceLists:
   - name: trending
     id: 12345
     radarr:
-      rootFolder: /movies
+      rootFolderPath: /movies
       qualityProfile: HD-1080p
       tags: [mdblist]
       monitor: movieOnly
-      searchOnAdd: true
+      searchForMovie: true
       minimumAvailability: released
     sonarr:
-      rootFolder: /tv
+      rootFolderPath: /tv
       qualityProfile: HD-1080p
       tags: [mdblist]
       monitor: all
-      searchOnAdd: true
+      searchForMissingEpisodes: true
       seriesType: standard
       seasonFolder: true
 ```
