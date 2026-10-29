@@ -10,36 +10,38 @@ import (
 	"github.com/arsac/mdblistaar/internal/config"
 )
 
-const validConfig = `{
-  "radarr": {"url": "http://radarr:7878"},
-  "sonarr": {"url": "http://sonarr:8989"},
-  "sourceLists": [{
-    "name": "anime",
-    "id": 12345,
-    "radarr": {
-      "rootFolder": "/data/media/movies-anime",
-      "qualityProfile": "Remux-1080p - Anime",
-      "tags": ["mdblist"],
-      "monitor": "movieOnly",
-      "searchOnAdd": true,
-      "minimumAvailability": "released"
-    },
-    "sonarr": {
-      "rootFolder": "/data/media/tv-anime",
-      "qualityProfile": "Remux-1080p - Anime",
-      "monitor": "all",
-      "searchOnAdd": false,
-      "seriesType": "anime",
-      "seasonFolder": true
-    }
-  }]
-}`
+const configHead = `radarr:
+  url: http://radarr:7878
+sonarr:
+  url: http://sonarr:8989
+sourceLists:
+`
 
-func env(t *testing.T, configJSON string, vars map[string]string) func(string) string {
+const animeList = `  - name: anime
+    id: 12345
+    radarr:
+      rootFolder: /movies/anime
+      qualityProfile: Remux-1080p - Anime
+      tags: [mdblist]
+      monitor: movieOnly
+      searchOnAdd: true
+      minimumAvailability: released
+    sonarr:
+      rootFolder: /tv/anime
+      qualityProfile: Remux-1080p - Anime
+      monitor: all
+      searchOnAdd: false
+      seriesType: anime
+      seasonFolder: true
+`
+
+const validConfig = configHead + animeList
+
+func env(t *testing.T, configYAML string, vars map[string]string) func(string) string {
 	t.Helper()
 
-	path := filepath.Join(t.TempDir(), "config.json")
-	if err := os.WriteFile(path, []byte(configJSON), 0o600); err != nil {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte(configYAML), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -87,9 +89,6 @@ func TestLoad_Valid(t *testing.T) {
 func TestLoad_Invalid(t *testing.T) {
 	t.Parallel()
 
-	list := validConfig[strings.Index(validConfig, `{
-    "name"`):strings.LastIndex(validConfig, "]")]
-
 	tests := []struct {
 		name     string
 		config   string
@@ -114,8 +113,8 @@ func TestLoad_Invalid(t *testing.T) {
 		},
 		{
 			name:     "unknown field",
-			config:   strings.Replace(validConfig, `"rootFolder"`, `"rootFolders"`, 1),
-			wantErrs: []string{`unknown field "rootFolders"`},
+			config:   strings.Replace(validConfig, "rootFolder:", "rootFolders:", 1),
+			wantErrs: []string{"field rootFolders not found"},
 		},
 		{
 			name:     "bad url",
@@ -124,17 +123,16 @@ func TestLoad_Invalid(t *testing.T) {
 		},
 		{
 			name:     "no source lists",
-			config:   `{"radarr": {"url": "http://r"}, "sonarr": {"url": "http://s"}, "sourceLists": []}`,
+			config:   configHead + "  []\n",
 			wantErrs: []string{"at least one Source List"},
 		},
 		{
 			name: "bad add options",
 			config: strings.NewReplacer(
-				`"seriesType": "anime"`, `"seriesType": "cartoon"`,
-				`"monitor": "movieOnly"`, `"monitor": "all"`,
-				`"seasonFolder": true`, `"seasonFolder": null`,
-				`"qualityProfile": "Remux-1080p - Anime",
-      "tags"`, `"tags"`,
+				"seriesType: anime", "seriesType: cartoon",
+				"monitor: movieOnly", "monitor: all",
+				"seasonFolder: true", "seasonFolder: null",
+				"qualityProfile: Remux-1080p - Anime\n      tags", "tags",
 			).Replace(validConfig),
 			wantErrs: []string{
 				`"anime" sonarr.seriesType must be one of`,
@@ -145,18 +143,18 @@ func TestLoad_Invalid(t *testing.T) {
 		},
 		{
 			name:     "bad id",
-			config:   strings.Replace(validConfig, `"id": 12345`, `"id": 0`, 1),
+			config:   strings.Replace(validConfig, "id: 12345", "id: 0", 1),
 			wantErrs: []string{"id must be a positive"},
 		},
 		{
 			name:     "duplicate names",
-			config:   strings.Replace(validConfig, list, list+","+list, 1),
+			config:   validConfig + animeList,
 			wantErrs: []string{`"anime": duplicate name`},
 		},
 		{
 			name:     "missing file",
 			config:   validConfig,
-			vars:     map[string]string{"CONFIG_PATH": "/nonexistent/config.json"},
+			vars:     map[string]string{"CONFIG_PATH": "/nonexistent/config.yaml"},
 			wantErrs: []string{"read config"},
 		},
 	}

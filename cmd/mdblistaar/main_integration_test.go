@@ -8,6 +8,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -159,26 +160,32 @@ func build(t *testing.T) string {
 func writeConfig(t *testing.T, radarrURL, sonarrURL string) string {
 	t.Helper()
 
-	radarrOpts := map[string]any{
-		"rootFolder": "/movies", "qualityProfile": "Any", "tags": []string{"mdblistaar-it"},
-		"monitor": "movieOnly", "searchOnAdd": false, "minimumAvailability": "released",
-	}
-	sonarrOpts := map[string]any{
-		"rootFolder": "/tv", "qualityProfile": "Any", "tags": []string{"mdblistaar-it"},
-		"monitor": "future", "searchOnAdd": false, "seriesType": "standard", "seasonFolder": true,
-	}
+	cfg := fmt.Sprintf(`radarr:
+  url: %s
+sonarr:
+  url: %s
+sourceLists:
+  - name: fixture
+    id: %d
+    radarr:
+      rootFolder: /movies
+      qualityProfile: Any
+      tags: [mdblistaar-it]
+      monitor: movieOnly
+      searchOnAdd: false
+      minimumAvailability: released
+    sonarr:
+      rootFolder: /tv
+      qualityProfile: Any
+      tags: [mdblistaar-it]
+      monitor: future
+      searchOnAdd: false
+      seriesType: standard
+      seasonFolder: true
+`, radarrURL, sonarrURL, listID)
 
-	cfg, err := json.Marshal(map[string]any{
-		"radarr": map[string]string{"url": radarrURL},
-		"sonarr": map[string]string{"url": sonarrURL},
-		"sourceLists": []map[string]any{
-			{"name": "fixture", "id": listID, "radarr": radarrOpts, "sonarr": sonarrOpts},
-		},
-	})
-	must(t, err)
-
-	path := filepath.Join(t.TempDir(), "config.json")
-	must(t, os.WriteFile(path, cfg, 0o600))
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	must(t, os.WriteFile(path, []byte(cfg), 0o600))
 
 	return path
 }

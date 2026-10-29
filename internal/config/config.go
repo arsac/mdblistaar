@@ -3,60 +3,61 @@ package config
 
 import (
 	"cmp"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"slices"
 	"strconv"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // DefaultPath is where the config file is read from when CONFIG_PATH is unset.
-const DefaultPath = "/config/config.json"
+const DefaultPath = "/config/config.yaml"
 
 // Config is everything a Sync needs.
 type Config struct {
-	MDBListAPIKey string       `json:"-"`
-	DryRun        bool         `json:"-"`
-	Radarr        Arr          `json:"radarr"`
-	Sonarr        Arr          `json:"sonarr"`
-	SourceLists   []SourceList `json:"sourceLists"`
+	MDBListAPIKey string       `yaml:"-"`
+	DryRun        bool         `yaml:"-"`
+	Radarr        Arr          `yaml:"radarr"`
+	Sonarr        Arr          `yaml:"sonarr"`
+	SourceLists   []SourceList `yaml:"sourceLists"`
 }
 
 // Arr is how to reach one Sonarr or Radarr instance.
 type Arr struct {
-	URL    string `json:"url"`
-	APIKey string `json:"-"`
+	URL    string `yaml:"url"`
+	APIKey string `yaml:"-"`
 }
 
 // SourceList is one mdblist.com list and the Add Options its titles get in each Arr.
 type SourceList struct {
-	Name   string        `json:"name"`
-	ID     int64         `json:"id"`
-	Radarr RadarrOptions `json:"radarr"`
-	Sonarr SonarrOptions `json:"sonarr"`
+	Name   string        `yaml:"name"`
+	ID     int64         `yaml:"id"`
+	Radarr RadarrOptions `yaml:"radarr"`
+	Sonarr SonarrOptions `yaml:"sonarr"`
 }
 
 // RadarrOptions are the Add Options for a Source List's movies.
 type RadarrOptions struct {
-	RootFolder          string   `json:"rootFolder"`
-	QualityProfile      string   `json:"qualityProfile"`
-	Tags                []string `json:"tags"`
-	Monitor             string   `json:"monitor"`
-	SearchOnAdd         *bool    `json:"searchOnAdd"`
-	MinimumAvailability string   `json:"minimumAvailability"`
+	RootFolder          string   `yaml:"rootFolder"`
+	QualityProfile      string   `yaml:"qualityProfile"`
+	Tags                []string `yaml:"tags"`
+	Monitor             string   `yaml:"monitor"`
+	SearchOnAdd         *bool    `yaml:"searchOnAdd"`
+	MinimumAvailability string   `yaml:"minimumAvailability"`
 }
 
 // SonarrOptions are the Add Options for a Source List's Shows.
 type SonarrOptions struct {
-	RootFolder     string   `json:"rootFolder"`
-	QualityProfile string   `json:"qualityProfile"`
-	Tags           []string `json:"tags"`
-	Monitor        string   `json:"monitor"`
-	SearchOnAdd    *bool    `json:"searchOnAdd"`
-	SeriesType     string   `json:"seriesType"`
-	SeasonFolder   *bool    `json:"seasonFolder"`
+	RootFolder     string   `yaml:"rootFolder"`
+	QualityProfile string   `yaml:"qualityProfile"`
+	Tags           []string `yaml:"tags"`
+	Monitor        string   `yaml:"monitor"`
+	SearchOnAdd    *bool    `yaml:"searchOnAdd"`
+	SeriesType     string   `yaml:"seriesType"`
+	SeasonFolder   *bool    `yaml:"seasonFolder"`
 }
 
 //nolint:gochecknoglobals // read-only lookup tables of the values each Arr accepts.
@@ -83,8 +84,8 @@ func Load(getenv func(string) string) (*Config, error) {
 
 	var cfg Config
 
-	dec := json.NewDecoder(file)
-	dec.DisallowUnknownFields()
+	dec := yaml.NewDecoder(file)
+	dec.KnownFields(true)
 
 	if err = dec.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("parse config %s: %w", path, err)
