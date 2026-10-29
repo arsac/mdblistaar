@@ -274,7 +274,7 @@ func (s *Syncer) loadSonarr(ctx context.Context) (*arr, error) {
 }
 
 func (s *Syncer) radarrAdder(ctx context.Context, a *arr, opts config.RadarrOptions) (addFunc, error) {
-	profileID, rootFolder, tagIDs, err := s.resolve(ctx, a, opts.QualityProfile, opts.RootFolder, opts.Tags)
+	profileID, rootFolder, tagIDs, err := s.resolve(ctx, a, opts.QualityProfile, opts.RootFolderPath, opts.Tags)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func (s *Syncer) radarrAdder(ctx context.Context, a *arr, opts config.RadarrOpti
 			Monitored:           opts.Monitor != "none",
 			Tags:                tagIDs,
 			AddOptions: &radarr.AddMovieOptions{
-				SearchForMovie: *opts.SearchOnAdd,
+				SearchForMovie: *opts.SearchForMovie,
 				Monitor:        opts.Monitor,
 			},
 		})
@@ -310,7 +310,7 @@ func (s *Syncer) radarrAdder(ctx context.Context, a *arr, opts config.RadarrOpti
 }
 
 func (s *Syncer) sonarrAdder(ctx context.Context, a *arr, opts config.SonarrOptions) (addFunc, error) {
-	profileID, rootFolder, tagIDs, err := s.resolve(ctx, a, opts.QualityProfile, opts.RootFolder, opts.Tags)
+	profileID, rootFolder, tagIDs, err := s.resolve(ctx, a, opts.QualityProfile, opts.RootFolderPath, opts.Tags)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (s *Syncer) sonarrAdder(ctx context.Context, a *arr, opts config.SonarrOpti
 			Monitored:        opts.Monitor != "none",
 			Tags:             tagIDs,
 			AddOptions: &sonarr.AddSeriesOptions{
-				SearchForMissingEpisodes: *opts.SearchOnAdd,
+				SearchForMissingEpisodes: *opts.SearchForMissingEpisodes,
 				Monitor:                  sonarr.MonitorType(opts.Monitor),
 			},
 		})

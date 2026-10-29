@@ -194,20 +194,20 @@ func sourceList(name string, id int64, root string) config.SourceList {
 		Name: name,
 		ID:   id,
 		Radarr: config.RadarrOptions{
-			RootFolder:          root,
+			RootFolderPath:      root,
 			QualityProfile:      "HD",
 			Tags:                []string{"mdblist", "New-Tag"},
 			Monitor:             "movieOnly",
-			SearchOnAdd:         new(true),
+			SearchForMovie:      new(true),
 			MinimumAvailability: "released",
 		},
 		Sonarr: config.SonarrOptions{
-			RootFolder:     root,
-			QualityProfile: "Anime",
-			Monitor:        "future",
-			SearchOnAdd:    new(false),
-			SeriesType:     "anime",
-			SeasonFolder:   new(true),
+			RootFolderPath:           root,
+			QualityProfile:           "Anime",
+			Monitor:                  "future",
+			SearchForMissingEpisodes: new(false),
+			SeriesType:               "anime",
+			SeasonFolder:             new(true),
 		},
 	}
 }
@@ -357,7 +357,7 @@ func TestRun_FailuresAreIsolated(t *testing.T) {
 			name: "unknown root folder",
 			lists: func() []config.SourceList {
 				l := sourceList("a", 1, "/media/main")
-				l.Radarr.RootFolder = "/elsewhere"
+				l.Radarr.RootFolderPath = "/elsewhere"
 
 				return []config.SourceList{l}
 			}(),
