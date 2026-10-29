@@ -1,0 +1,35 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "github>home-operations/renovate-config",
+    "docker:pinDigests",
+  ],
+  // No helm charts here: neutralise the helm-docs/helm-schema postUpgradeTask
+  // inherited from the home-operations preset, which otherwise fails every branch.
+  postUpgradeTasks: { commands: [] },
+  postUpdateOptions: ["gomodTidy"],
+  // Don't create a branch or PR until the update passes minimumReleaseAge.
+  internalChecksFilter: "strict",
+  // Security fixes from osv.dev (which includes the Go vulnerability database), no
+  // Dependabot needed. They skip the 3-day hold below.
+  osvVulnerabilityAlerts: true,
+  dependencyDashboardOSVVulnerabilitySummary: "all",
+  vulnerabilityAlerts: { minimumReleaseAge: null },
+  packageRules: [
+    {
+      // Last rule, so it wins over the preset's shorter holds (1 minute for actions/*
+      // and docker/* actions, none for Docker images).
+      description: "Every update waits until its release is 3 days old",
+      matchPackageNames: ["*"],
+      minimumReleaseAge: "3 days",
+    },
+    {
+      // Renovate skips these by default, which leaves fixes in modules we only get
+      // through a dependency (e.g. golang.org/x/net via starr) unapplied.
+      description: "Update indirect Go modules too",
+      matchManagers: ["gomod"],
+      matchDepTypes: ["indirect"],
+      enabled: true,
+    },
+  ],
+}

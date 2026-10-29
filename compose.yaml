@@ -1,0 +1,19 @@
+# Throwaway Sonarr and Radarr for the integration tests (`mise run test:integration`).
+# Images match the Sonarr and Radarr builds we deploy. State lives in tmpfs, so `docker compose down` resets it.
+services:
+  sonarr:
+    image: ghcr.io/home-operations/sonarr:5.0.0.2838@sha256:5d4f89a36a06fe44039e7533e743b4c7bf0e0d82868c86ea8ed8178abd1cbe4b
+    environment:
+      SONARR__AUTH__APIKEY: integration-test-key
+      SONARR__AUTH__METHOD: External
+      SONARR__SERVER__PORT: "8989"
+    ports: ["127.0.0.1:8989:8989"]
+    tmpfs: ["/config:mode=1777", "/tv:mode=1777"]
+  radarr:
+    image: ghcr.io/home-operations/radarr:7.0.0.10815@sha256:c044b4df8e7b2546ef389481626a56fabe291575ff2d65481b1555432d6161ff
+    environment:
+      RADARR__AUTH__APIKEY: integration-test-key
+      RADARR__AUTH__METHOD: External
+      RADARR__SERVER__PORT: "7878"
+    ports: ["127.0.0.1:7878:7878"]
+    tmpfs: ["/config:mode=1777", "/movies:mode=1777"]

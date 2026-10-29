@@ -1,0 +1,17 @@
+[tools]
+go = "1.27.3"
+golangci-lint = "2.15.0"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
+zizmor = "1.31.1"
+
+[env]
+# MDBLIST_API_KEY for the integration tests lives in .env, which git ignores.
+_.file = { path = ".env", redact = true }
+
+[tasks."test:integration"]
+description = "Sync live mdblist lists into compose.yaml's Sonarr and Radarr, twice"
+run = [
+  # Recreating resets the tmpfs-backed Arrs, so every run starts from empty libraries.
+  "docker compose up -d --force-recreate",
+  "go test -tags integration -count=1 ./cmd/mdblistaar/",
+]
