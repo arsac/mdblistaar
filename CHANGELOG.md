@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/arsac/mdblistaar/compare/v0.1.0...v0.2.0) (2026-10-29)
+
+
+### Features
+
+* **config:** read the config file as YAML with Arr API key names ([5ee9642](https://github.com/arsac/mdblistaar/commit/5ee9642f2b63a2f71c2709a5ac77e11a54d91536))
+
 ## 0.1.0 (2026-10-29)
 
 
