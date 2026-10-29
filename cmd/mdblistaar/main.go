@@ -50,8 +50,12 @@ func run(log *slog.Logger) error {
 			cfg.MDBListAPIKey,
 			"mdblistaar/"+version,
 		),
-		radarr.New(starr.New(cfg.Radarr.APIKey, cfg.Radarr.URL, httpTimeout)),
-		sonarr.New(starr.New(cfg.Sonarr.APIKey, cfg.Sonarr.URL, httpTimeout)),
+		radarr.New(&starr.Config{
+			APIKey: cfg.Radarr.APIKey, URL: cfg.Radarr.URL, Client: starr.Client(httpTimeout, true),
+		}),
+		sonarr.New(&starr.Config{
+			APIKey: cfg.Sonarr.APIKey, URL: cfg.Sonarr.URL, Client: starr.Client(httpTimeout, true),
+		}),
 		cfg.DryRun,
 	)
 
